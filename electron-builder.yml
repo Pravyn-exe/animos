@@ -1,0 +1,23 @@
+appId: app.animos.desktop
+productName: Animos
+directories:
+  output: release
+asar: false
+files:
+  - electron/**
+  - src/**
+  - scripts/**
+  - public/**
+  - server/**
+  - package.json
+  - vite.config.ts
+  - tsconfig.json
+  - eslint.config.mjs
+  - .grok/**
+  - .prettierrc
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: Animos.exe
