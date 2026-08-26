@@ -1,11 +1,15 @@
 #!/usr/bin/env node
+/**
+ * Run a command with `.grok/app-env.json` merged into its environment.
+ */
 import { spawn } from "node:child_process";
-import { readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { constants as osConstants } from "node:os";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const APP_ENV_REL_PATH = ".grok/app-env.json";
+
 const VITE_PREFIX = "VITE_";
 
 export function parseAppEnv(text) {
@@ -59,14 +63,45 @@ export function isMainModule(moduleUrl) {
   }
 }
 
+function withLocalBinPath(env) {
+  const next = { ...env };
+  const binDir = join(projectRoot(), "node_modules", ".bin");
+  const pathKey = Object.keys(next).find((k) => k.toLowerCase() === "path") ?? "PATH";
+  next[pathKey] = `${binDir}${delimiter}${next[pathKey] ?? ""}`;
+  return next;
+}
+
+function resolveSpawn(command, args) {
+  const root = projectRoot();
+  if (command === "vite") {
+    const viteJs = join(root, "node_modules", "vite", "bin", "vite.js");
+    if (existsSync(viteJs)) {
+      return { command: process.execPath, args: [viteJs, ...args], shell: false };
+    }
+  }
+  const isWin = process.platform === "win32";
+  const local = join(root, "node_modules", ".bin", isWin ? `${command}.cmd` : command);
+  if (existsSync(local)) {
+    return { command: local, args, shell: isWin };
+  }
+  return { command, args, shell: isWin };
+}
+
 function main(argv) {
   const [command, ...args] = argv;
   if (!command) {
     console.error("usage: node scripts/with-app-env.mjs <command> [args…]");
     process.exit(2);
   }
-  const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
-  const child = spawn(command, args, { stdio: "inherit", env });
+  const env = withLocalBinPath(mergeAppEnv(readAppEnv(projectRoot()), process.env));
+  const resolved = resolveSpawn(command, args);
+  const child = spawn(resolved.command, resolved.args, {
+    stdio: "inherit",
+    env,
+    cwd: projectRoot(),
+    shell: resolved.shell,
+    windowsHide: true,
+  });
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => child.kill(signal));
   }
