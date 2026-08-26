@@ -3,19 +3,20 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "main": "electron/main.mjs",
   "overrides": {
     "nf3": "0.3.17"
   },
   "scripts": {
+    "start": "node ./node_modules/vite/bin/vite.js dev --host 0.0.0.0 --port 8080",
     "dev": "node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
+    "desktop": "npx electron electron/main.mjs",
+    "dist": "electron-builder --win portable --x64",
     "build": "node scripts/with-app-env.mjs vite build && npm run db:migrate",
     "db:migrate": "node scripts/migrate.mjs",
     "build:dev": "node scripts/with-app-env.mjs vite build --mode development",
     "preview": "node scripts/with-app-env.mjs vite preview",
-    "preview:restart": "node scripts/preview.mjs restart",
-    "preview:stop": "node scripts/preview.mjs stop",
     "typecheck": "tsc --noEmit",
-    "check:auth": "node scripts/check-auth-invariant.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -81,6 +82,8 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
